@@ -1,0 +1,22 @@
+# Prevent PHP execution in uploads directory
+<FilesMatch "\.(php|php5|phtml)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes
+
+# Cache control for images
+<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+    ExpiresActive On
+    ExpiresDefault "access plus 1 month"
+    Header append Cache-Control "public"
+</FilesMatch>
+
+# Cache control for documents
+<FilesMatch "\.(pdf|doc|docx)$">
+    ExpiresActive On
+    ExpiresDefault "access plus 1 week"
+    Header append Cache-Control "public"
+</FilesMatch>
