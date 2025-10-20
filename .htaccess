@@ -1,0 +1,45 @@
+# Security Headers
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Prevent access to sensitive files
+<Files ".env">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "install.php">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Prevent PHP execution in uploads
+<Directory "/uploads">
+    php_flag engine off
+    RemoveHandler .php
+    RemoveType .php
+    <FilesMatch "\.php$">
+        Deny from all
+    </FilesMatch>
+</Directory>
+
+# URL Rewriting
+RewriteEngine On
+
+# Redirect to HTTPS (uncomment when SSL is enabled)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# API routing
+RewriteRule ^api/upload/(.*)$ /public/api/upload.php?api_key=$1 [QSA,L]
+RewriteRule ^api/files/(.*)$ /public/api/files.php?api_key=$1 [QSA,L]
+
+# Frontend routing
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /public/$1 [L]
