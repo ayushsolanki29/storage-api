@@ -25,7 +25,7 @@ define('RATE_LIMIT_WINDOW', 60); // seconds
 try {
     $pdo = new PDO(
         "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET,
-        DB_USER, 
+        DB_USER,
         DB_PASS,
         [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -37,4 +37,3 @@ try {
     error_log("Database connection failed: " . $e->getMessage());
     die("Database connection failed. Please try again later.");
 }
-?>

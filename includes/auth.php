@@ -26,29 +26,29 @@ function get_logged_user()
 }
 
 
-function login($email, $password) {
+function login($email, $password)
+{
     global $pdo;
-    
+
     try {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? AND status = 'active'");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
-        
+
         if ($user && password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['user_api_key'] = $user['api_key'];
             $_SESSION['user_role'] = $user['role'] ?? 'user'; // ADD THIS LINE
-            
+
             // Update last login
             $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?")->execute([$user['id']]);
-            
+
             return true;
         }
-        
+
         return false;
-        
     } catch (PDOException $e) {
         error_log("Login error: " . $e->getMessage());
         return false;
