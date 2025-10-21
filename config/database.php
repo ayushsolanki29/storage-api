@@ -5,7 +5,7 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
-define('SITE_URL', 'https://localhost/storage_app');
+define('SITE_URL', 'http://localhost/storage_app');
 define('UPLOAD_PATH', $_SERVER['DOCUMENT_ROOT'] . '/storage_app/uploads');
 define('UPLOAD_URL', SITE_URL . '/uploads');
 

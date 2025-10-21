@@ -214,6 +214,144 @@ function generate_remember_token()
 }
 
 /**
+ * Delete file by ID (for use in dashboard)
+ */
+function delete_user_file($user_id, $file_id) {
+    global $pdo;
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Get file details
+        $stmt = $pdo->prepare("
+            SELECT * FROM uploads 
+            WHERE id = ? AND user_id = ?
+        ");
+        $stmt->execute([$file_id, $user_id]);
+        $file = $stmt->fetch();
+        
+        if (!$file) {
+            $pdo->rollBack();
+            return ['success' => false, 'message' => 'File not found'];
+        }
+        
+        // Delete physical files
+        $files_deleted = delete_physical_files($file);
+        
+        // Delete database record
+        $stmt = $pdo->prepare("DELETE FROM uploads WHERE id = ? AND user_id = ?");
+        $stmt->execute([$file_id, $user_id]);
+        
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollBack();
+            return ['success' => false, 'message' => 'Failed to delete file record'];
+        }
+        
+        // Update user storage usage
+        $file_size = $file['size'];
+        $update_stmt = $pdo->prepare("UPDATE users SET used_space = GREATEST(0, used_space - ?) WHERE id = ?");
+        $update_stmt->execute([$file_size, $user_id]);
+        
+        // Log the deletion
+        log_usage($user_id, 'api_call', 0, 'delete_file', $file_id);
+        
+        $pdo->commit();
+        
+        return [
+            'success' => true,
+            'message' => 'File deleted successfully',
+            'file' => [
+                'id' => (int)$file_id,
+                'name' => $file['file_name'],
+                'size' => (int)$file_size,
+                'files_deleted' => $files_deleted
+            ]
+        ];
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log("Delete file error: " . $e->getMessage());
+        return ['success' => false, 'message' => 'Delete failed: ' . $e->getMessage()];
+    }
+}
+
+/**
+ * Delete physical files from server
+ */
+function delete_physical_files($file) {
+    $files_deleted = [];
+    
+    // Delete main file
+    if (!empty($file['file_path']) && file_exists($file['file_path'])) {
+        if (unlink($file['file_path'])) {
+            $files_deleted[] = 'original';
+        } else {
+            error_log("Failed to delete file: " . $file['file_path']);
+        }
+    }
+    
+    // Delete compressed file
+    if (!empty($file['compressed_path']) && file_exists($file['compressed_path'])) {
+        if (unlink($file['compressed_path'])) {
+            $files_deleted[] = 'compressed';
+        } else {
+            error_log("Failed to delete compressed file: " . $file['compressed_path']);
+        }
+    }
+    
+    // Delete thumbnail file
+    if (!empty($file['thumbnail_path']) && file_exists($file['thumbnail_path'])) {
+        if (unlink($file['thumbnail_path'])) {
+            $files_deleted[] = 'thumbnail';
+        } else {
+            error_log("Failed to delete thumbnail: " . $file['thumbnail_path']);
+        }
+    }
+    
+    // Clean up empty directories
+    clean_empty_directories($file);
+    
+    return $files_deleted;
+}
+
+/**
+ * Clean up empty directories after file deletion
+ */
+function clean_empty_directories($file) {
+    if (empty($file['file_path'])) {
+        return;
+    }
+    
+    $file_path = $file['file_path'];
+    $upload_dir = dirname($file_path);
+    
+    // Check if directory is empty (only . and ..)
+    if (is_dir($upload_dir)) {
+        $files_in_dir = scandir($upload_dir);
+        if (count($files_in_dir) == 2) {
+            @rmdir($upload_dir);
+            
+            // Also check and remove parent directories if empty
+            $parent_dir = dirname($upload_dir);
+            if (is_dir($parent_dir)) {
+                $files_in_parent = scandir($parent_dir);
+                if (count($files_in_parent) == 2) {
+                    @rmdir($parent_dir);
+                    
+                    $grandparent_dir = dirname($parent_dir);
+                    if (is_dir($grandparent_dir)) {
+                        $files_in_grandparent = scandir($grandparent_dir);
+                        if (count($files_in_grandparent) == 2) {
+                            @rmdir($grandparent_dir);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * Set remember token for user
  */
 function set_remember_token($user_id, $token)

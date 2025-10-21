@@ -1,5 +1,5 @@
 <?php
-session_start();
+
 require_once 'includes/auth.php';
 
 // Redirect if already logged in

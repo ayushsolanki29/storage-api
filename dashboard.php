@@ -428,40 +428,40 @@ if (!defined('MAX_FILE_SIZE')) {
             }, 3000);
         }
 
-      // Upload form handling - FIXED VERSION
-document.getElementById('uploadForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const files = document.getElementById('fileInput').files;
-    
-    if (files.length === 0) {
-        showToast('Please select files to upload', 'error');
-        return;
-    }
-    
-    // Get Alpine component safely
-    const alpineElement = document.querySelector('[x-data]');
-    let alpineData = null;
-    
-    // Try different ways to access Alpine data
-    if (alpineElement && alpineElement.__x) {
-        alpineData = alpineElement.__x.$data;
-    } else if (window.Alpine && alpineElement) {
-        // Alternative method to get Alpine data
-        alpineData = Alpine.$data(alpineElement);
-    }
-    
-    if (alpineData) {
-        alpineData.isUploading = true;
-        alpineData.progress = 0;
-    } else {
-        // Fallback: create our own state management
-        const progressBar = document.querySelector('.bg-blue-600');
-        const progressText = document.querySelector('[x-text*="Uploading"]');
-        const submitButton = document.querySelector('button[type="submit"]');
-        
-        submitButton.disabled = true;
-        submitButton.innerHTML = `
+        // Upload form handling - FIXED VERSION
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const files = document.getElementById('fileInput').files;
+
+            if (files.length === 0) {
+                showToast('Please select files to upload', 'error');
+                return;
+            }
+
+            // Get Alpine component safely
+            const alpineElement = document.querySelector('[x-data]');
+            let alpineData = null;
+
+            // Try different ways to access Alpine data
+            if (alpineElement && alpineElement.__x) {
+                alpineData = alpineElement.__x.$data;
+            } else if (window.Alpine && alpineElement) {
+                // Alternative method to get Alpine data
+                alpineData = Alpine.$data(alpineElement);
+            }
+
+            if (alpineData) {
+                alpineData.isUploading = true;
+                alpineData.progress = 0;
+            } else {
+                // Fallback: create our own state management
+                const progressBar = document.querySelector('.bg-blue-600');
+                const progressText = document.querySelector('[x-text*="Uploading"]');
+                const submitButton = document.querySelector('button[type="submit"]');
+
+                submitButton.disabled = true;
+                submitButton.innerHTML = `
             <span class="flex items-center justify-center">
                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -470,89 +470,89 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
                 Uploading...
             </span>
         `;
-    }
-    
-    const formData = new FormData();
-    Array.from(files).forEach(file => {
-        formData.append('file', file);
-    });
-    
-    const xhr = new XMLHttpRequest();
-    
-    xhr.upload.addEventListener('progress', function(e) {
-        if (e.lengthComputable) {
-            const percentComplete = (e.loaded / e.total) * 100;
-            const progress = Math.round(percentComplete);
-            
-            if (alpineData) {
-                alpineData.progress = progress;
-            } else {
-                // Update progress bar manually
-                const progressBar = document.querySelector('.bg-blue-600');
-                const progressText = document.querySelector('[x-text*="Uploading"]');
-                if (progressBar) {
-                    progressBar.style.width = `${progress}%`;
+            }
+
+            const formData = new FormData();
+            Array.from(files).forEach(file => {
+                formData.append('file', file);
+            });
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    const progress = Math.round(percentComplete);
+
+                    if (alpineData) {
+                        alpineData.progress = progress;
+                    } else {
+                        // Update progress bar manually
+                        const progressBar = document.querySelector('.bg-blue-600');
+                        const progressText = document.querySelector('[x-text*="Uploading"]');
+                        if (progressBar) {
+                            progressBar.style.width = `${progress}%`;
+                        }
+                        if (progressText) {
+                            progressText.textContent = `Uploading... ${progress}%`;
+                        }
+                    }
                 }
-                if (progressText) {
-                    progressText.textContent = `Uploading... ${progress}%`;
+            });
+
+            xhr.addEventListener('load', function() {
+                if (alpineData) {
+                    alpineData.isUploading = false;
+                    alpineData.progress = 0;
+                } else {
+                    // Reset manual state
+                    const submitButton = document.querySelector('button[type="submit"]');
+                    const progressBar = document.querySelector('.bg-blue-600');
+                    const progressText = document.querySelector('[x-text*="Uploading"]');
+
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = 'Upload Files';
+                    }
+                    if (progressBar) {
+                        progressBar.style.width = '0%';
+                    }
                 }
-            }
-        }
-    });
-    
-    xhr.addEventListener('load', function() {
-        if (alpineData) {
-            alpineData.isUploading = false;
-            alpineData.progress = 0;
-        } else {
-            // Reset manual state
-            const submitButton = document.querySelector('button[type="submit"]');
-            const progressBar = document.querySelector('.bg-blue-600');
-            const progressText = document.querySelector('[x-text*="Uploading"]');
-            
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.innerHTML = 'Upload Files';
-            }
-            if (progressBar) {
-                progressBar.style.width = '0%';
-            }
-        }
-        
-        try {
-            const response = JSON.parse(xhr.responseText);
-            if (response.success) {
-                showToast('Files uploaded successfully!', 'success');
-                // Clear file input and preview
-                document.getElementById('fileInput').value = '';
-                document.getElementById('filePreview').classList.add('hidden');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showToast('Upload failed: ' + (response.error || 'Unknown error'), 'error');
-            }
-        } catch (e) {
-            showToast('Upload failed: Invalid response from server', 'error');
-        }
-    });
-    
-    xhr.addEventListener('error', function() {
-        if (alpineData) {
-            alpineData.isUploading = false;
-            alpineData.progress = 0;
-        } else {
-            // Reset manual state on error
-            const submitButton = document.querySelector('button[type="submit"]');
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.innerHTML = 'Upload Files';
-            }
-        }
-        showToast('Upload failed: Network error', 'error');
-    });
-    
-    xhr.open('POST', 'api/upload.php?api_key=<?= $user['api_key'] ?>');
-    xhr.send(formData);
-});
+
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        showToast('Files uploaded successfully!', 'success');
+                        // Clear file input and preview
+                        document.getElementById('fileInput').value = '';
+                        document.getElementById('filePreview').classList.add('hidden');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showToast('Upload failed: ' + (response.error || 'Unknown error'), 'error');
+                    }
+                } catch (e) {
+                    showToast('Upload failed: Invalid response from server', 'error');
+                }
+            });
+
+            xhr.addEventListener('error', function() {
+                if (alpineData) {
+                    alpineData.isUploading = false;
+                    alpineData.progress = 0;
+                } else {
+                    // Reset manual state on error
+                    const submitButton = document.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = 'Upload Files';
+                    }
+                }
+                showToast('Upload failed: Network error', 'error');
+            });
+
+            xhr.open('POST', 'api/upload.php?api_key=<?= $user['api_key'] ?>');
+            xhr.send(formData);
+        });
     </script>
 </body>
 

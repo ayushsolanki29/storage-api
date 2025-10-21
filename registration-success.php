@@ -1,5 +1,5 @@
 <?php
-session_start();
+
 require_once 'includes/auth.php';
 
 if (!is_logged_in()) {
