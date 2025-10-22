@@ -1,7 +1,12 @@
 <?php
+header("Access-Control-Allow-Origin: *");
 require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json');
+// give me full cors 
+
+// header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
 
 // Get API key from query string
 $api_key = $_GET['api_key'] ?? '';

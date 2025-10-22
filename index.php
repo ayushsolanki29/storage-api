@@ -9,7 +9,7 @@ if (isset($_SESSION['user_id'])) {
 }
 
 // Check for demo mode
-$is_demo = isset($_SERVER['HTTP_HOST']) && (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], 'demo') !== false);
+// $is_demo = isset($_SERVER['HTTP_HOST']) && (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], 'demo') !== false);
 ?>
 <!DOCTYPE html>
 <html lang="en">
